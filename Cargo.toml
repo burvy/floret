@@ -1,0 +1,77 @@
+[workspace]
+members = ["protocol", "server"]
+
+[package]
+name = "floret"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+# Native dev only. Skips TLS validation so `cargo run` can connect to the live
+# server without owning its certificate, and points the protocol at localhost.
+# NEVER use this for a shipped native client.
+dev-local = [
+    "floret-protocol/dev-local",
+    "lightyear/webtransport_dangerous_configuration",
+    # links bevy as a shared library so our crate relinks without dragging all
+    # of bevy through each time. native only - breaks wasm, never ship it.
+    "bevy/dynamic_linking",
+]
+
+[dependencies]
+# 2d instead of 3d: this is a flat hangout space, there is no third axis to pay
+# for. "2d" already brings default_app, default_platform, scene (which is where
+# bsn! lives) and picking.
+bevy = { version = "0.19", default-features = false, features = [
+    "2d",
+    "ui_bevy_render",
+    "bevy_text",
+    "default_font",
+]}
+# No "avian2d" feature: floret has no physics. Position is integrated by hand in
+# eight lines of pure arithmetic, so there is no solver to hand to lightyear.
+lightyear = { version = "0.28.0", default-features = false, features = [
+    "std",
+    "client",
+    "netcode",
+    "webtransport",
+    "replication",
+    "prediction",
+    "interpolation",
+    "input_native",
+]}
+floret-protocol = { path = "protocol" } # shared with the server (client is root)
+# Cap log levels at compile time so low-severity spam cannot cost us frames.
+log = { version = "0.4", features = ["max_level_debug"] }
+tracing = { version = "0.1", features = ["max_level_debug"] }
+getrandom = "0.4.3"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+getrandom = { version = "0.4.3", features = ["wasm_js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+
+# Idiomatic Bevy trips these; the queries really do need that many arguments.
+[lints.clippy]
+too_many_arguments = "allow"
+type_complexity = "allow"
+
+# A little optimization in dev, a lot in dependencies we never edit.
+[profile.dev]
+opt-level = 1
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+opt-level = 3
+
+# <https://github.com/bevyengine/bevy/issues/14291>
+[profile.dev.package.wgpu-types]
+debug-assertions = false
+
+# Release is never in the iteration loop, so it can take as long as it likes.
+# NOTE: only applies to builds from this repo (the server, native clients). The
+# wasm client is built as a dependency of burvy-dev, whose own [profile.release]
+# wins - tune size over there, not here.
+[profile.release]
+codegen-units = 1
+lto = "fat"

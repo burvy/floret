@@ -1,0 +1,19 @@
+[build]
+target = "x86_64-pc-windows-msvc"
+# Short path: the full workspace path plus a wasm triple blows past the Windows
+# command-line length limit during linking.
+target-dir = "C:/ct/floret"
+
+# Fast dev iteration. All of this needs nightly, which rust-toolchain.toml pins.
+[target.x86_64-pc-windows-msvc]
+# rust-lld ships in the nightly sysroot and links far faster than link.exe.
+# Linking dominates the edit-run loop, so this is the biggest single win.
+linker = "rust-lld.exe"
+rustflags = [
+    # MUST stay `n` while dev-local enables bevy/dynamic_linking: sharing
+    # generics exports every instantiation and bevy blows past the 65535
+    # symbol cap on a Windows DLL.
+    "-Zshare-generics=n",
+    # parallel frontend, 0 means one thread per core
+    "-Zthreads=0",
+]

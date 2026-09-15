@@ -1,0 +1,35 @@
+[package]
+name = "floret-server"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+# Offline dev server: self-signed certificate generated at startup, no cert
+# files and no internet. Pair with the client's own dev-local.
+# NEVER ship a build like this.
+dev-local = [
+    "floret-protocol/dev-local",
+    "lightyear/webtransport_self_signed",
+]
+
+[dependencies]
+# Headless: no renderer, no window.
+bevy = { version = "0.19.0", default-features = false, features = [
+    "std",
+    "bevy_log",
+    "multi_threaded",
+]}
+lightyear = { version = "0.28.0", default-features = false, features = [
+    "std",
+    "server",
+    "netcode",
+    "webtransport",
+    "replication",
+    "prediction",
+    "interpolation",
+    "input_native",
+]}
+# Only for the current-thread runtime that loads the PEM files at startup.
+tokio = { version = "1.53.1", features = ["rt"] }
+# serde is not needed here; serialization is declared in floret-protocol.
+floret-protocol = { path = "../protocol" }
