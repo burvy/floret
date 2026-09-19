@@ -41,9 +41,13 @@ pub const SPAWN: Vec2 = Vec2::ZERO;
 ///
 /// This is the whole simulation. `dt` is passed in rather than read from a
 /// clock so that the function stays pure and so that rollback can re-run it for
-/// past ticks without lying about how much time passed.
+/// past ticks.
 pub fn step(pos: Position, input: &PlayerInputs, dt: f32) -> Position {
-    advance(pos, velocity(input), dt)
+    if input.respawn {
+        Position(SPAWN)
+    } else {
+        advance(pos, velocity(input), dt)
+    }
 }
 
 /// Desired velocity from a stick reading.
@@ -85,14 +89,20 @@ mod tests {
     use super::*;
 
     fn input(motion: Vec2) -> PlayerInputs {
-        PlayerInputs { motion }
+        PlayerInputs {
+            motion,
+            respawn: false,
+        }
     }
 
     #[test]
     fn diagonal_is_not_faster_than_straight() {
         let straight = velocity(&input(Vec2::new(1.0, 0.0))).length();
         let diagonal = velocity(&input(Vec2::new(1.0, 1.0))).length();
-        assert!((straight - diagonal).abs() < 0.01, "{straight} vs {diagonal}");
+        assert!(
+            (straight - diagonal).abs() < 0.01,
+            "{straight} vs {diagonal}"
+        );
         assert!((straight - SPEED).abs() < 0.01);
     }
 
@@ -101,6 +111,32 @@ mod tests {
         let half = velocity(&input(Vec2::new(0.5, 0.0))).length();
         assert!((half - SPEED / 2.0).abs() < 0.01, "{half}");
     }
+
+    // ---- YOUR TURN: these two fail until `step` handles `respawn` ----
+
+    #[test]
+    fn respawn_puts_you_back_in_the_middle() {
+        let lost = Position(Vec2::new(8000.0, -12_000.0));
+        let asking = PlayerInputs {
+            motion: Vec2::ZERO,
+            respawn: true,
+        };
+        assert_eq!(step(lost, &asking, 1.0 / 64.0).0, SPAWN);
+    }
+
+    #[test]
+    fn respawn_beats_walking() {
+        // Holding a direction while asking to respawn still lands you at SPAWN,
+        // not one tick's walk away from it.
+        let lost = Position(Vec2::new(500.0, 500.0));
+        let asking = PlayerInputs {
+            motion: Vec2::X,
+            respawn: true,
+        };
+        assert_eq!(step(lost, &asking, 1.0 / 64.0).0, SPAWN);
+    }
+
+    // ---- these already pass; don't break them ----
 
     #[test]
     fn nobody_leaves_the_world() {

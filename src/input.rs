@@ -36,6 +36,7 @@ fn write_input(
     >,
     keys: Res<ButtonInput<KeyCode>>,
     touches: Res<Touches>,
+    mut respawn: ResMut<crate::ui::RespawnPressed>,
 ) {
     // No body yet - we are still connecting, or the server has not replicated
     // ours back to us.
@@ -45,7 +46,15 @@ fn write_input(
 
     action.0 = protocol::PlayerInputs {
         motion: touch_motion(&touches).unwrap_or_else(|| key_motion(&keys)),
+        // R as the keyboard equivalent, so this is testable without a phone.
+        respawn: respawn.0 || keys.pressed(KeyCode::KeyR),
     };
+
+    // Cleared here, not in the observer: the click can land at any time, and
+    // this is the moment it has definitely been handed to the network. Tapping
+    // the button also registers as a touch, so `motion` may be a hair off zero
+    // for that one tick but respawn overrides position anyway.
+    respawn.0 = false;
 }
 
 /// WASD as a direction. Also the arrow keys, because someone will try them.

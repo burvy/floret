@@ -61,6 +61,13 @@ pub struct PlayerMarker;
 pub struct PlayerInputs {
     /// Desired travel direction: x right, y up, length at most 1.
     pub motion: Vec2,
+    /// True on the ticks the person is asking to go back to the middle.
+    ///
+    /// It rides in the input rather than being its own message on purpose: the
+    /// input is already replicated, already predicted, and already rolled back.
+    /// A teleport that travels this way is authoritative AND instant, with no
+    /// new machinery.
+    pub respawn: bool,
 }
 
 /// Required by `InputPlugin` whether or not we have entity fields to remap.

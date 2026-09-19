@@ -13,6 +13,7 @@ use bevy::prelude::*;
 mod input;
 mod net;
 mod render;
+mod ui;
 
 // Lets the browser start the game by calling `start()` on the wasm module.
 // ---
@@ -54,5 +55,6 @@ impl Plugin for MainPlugin {
         app.add_plugins(floret_protocol::protocol::ProtocolPlugin);
         app.add_plugins(input::InputPlugin);
         app.add_plugins(render::RenderPlugin);
+        app.add_plugins(ui::UiPlugin);
     }
 }
