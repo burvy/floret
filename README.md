@@ -27,7 +27,7 @@ cargo test -p floret-protocol
 
 ```
 protocol/src/shared.rs - the rules. pure functions. start here.
-protocol/src/protocol.rs - rules, but more technical
+protocol/src/protocol.rs - more registration rather than "rules"
 server/src/server.rs - listening, TLS, admitting people
 src/net.rs - client connecting to the server
 src/input.rs - inputs -> Vec2
@@ -58,7 +58,9 @@ similarly.
 
 The client and server movement systems are similar, except the server is 
 allowed to move everything and the client is obviously only allowed to 
-move themselves.  
+move themselves. More accurately, it is allowed to move its own prediction. 
+The client predicts all other clients, but the own client can change its 
+next immediate action`.
 
 Velocity is a function that can be calculated from `PlayerInputs` directly.  
 This means more predictability, less cost, less pain in rollback.  
